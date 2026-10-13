@@ -1,0 +1,333 @@
+# skAPI 인게임 자동 테스트. 결과는 콘솔에 [SKAPI-TEST] 로 출력된다.
+
+options:
+	base: http://127.0.0.1:18080
+
+function pass(name: text):
+	add 1 to {skapitest::pass}
+	send "[SKAPI-TEST] PASS %{_name}%" to console
+
+function fail(name: text, detail: text):
+	add 1 to {skapitest::fail}
+	send "[SKAPI-TEST] FAIL %{_name}% :: %{_detail}%" to console
+
+function check(name: text, actual: object, expected: object):
+	if {_actual} is {_expected}:
+		pass({_name})
+	else:
+		fail({_name}, "got '%{_actual}%' expected '%{_expected}%'")
+
+function fetchStatus(url: text):
+	set {_req} to new api request to {_url}
+	send {_req} and store the response in {_r}
+	set {skapitest::fn} to api status of {_r}
+
+on load:
+	wait 5 seconds
+	execute console command "skapitest"
+
+on load:
+	# 안전장치: 테스트가 멈춰도 서버는 꺼지게
+	wait 180 seconds
+	send "[SKAPI-TEST] SAFETY-STOP" to console
+	execute console command "stop"
+
+command /skapitest:
+	trigger:
+		delete {skapitest::*}
+		set {skapitest::pass} to 0
+		set {skapitest::fail} to 0
+		send "[SKAPI-TEST] START" to console
+
+		# ── T1 대기형 비동기: 로컬 변수/이벤트 값 유지 ──
+		set {_marker} to "keep"
+		set {_list::*} to "x", "y" and "z"
+		set {_req} to new api request to "{@base}/echo"
+		send {_req} and store the response in {_res}
+		check("T1 status", api status of {_res}, 200)
+		check("T1 local kept", {_marker}, "keep")
+		check("T1 list kept", size of {_list::*}, 3)
+		if command sender is console:
+			pass("T1 event value kept")
+		else:
+			fail("T1 event value kept", "command sender = %command sender%")
+		if {_res} is successful:
+			pass("T1 successful")
+		else:
+			fail("T1 successful", "%api status of {_res}% %api error of {_res}%")
+
+		# ── T2 쿼리(한글) / 헤더 ──
+		set {_req} to new api request to "{@base}/echo"
+		set api query "q" of {_req} to "한글 검색"
+		set api query "page" of {_req} to 2
+		set api header "X-Api-Key" of {_req} to "secret"
+		send {_req} and store the response in {_res}
+		check("T2 query", json value "args.q" of {_res}, "한글 검색")
+		check("T2 page", json value "args.page" of {_res}, "2")
+		check("T2 header", json value "headers.x-api-key" of {_res}, "secret")
+		check("T2 response header", api header "x-test" of {_res}, "yes")
+		check("T2 method", json value "method" of {_res}, "GET")
+
+		# ── T3 POST + json of 목록 변수 ──
+		set {_body::model} to "test-model"
+		set {_body::max_tokens} to 100
+		set {_body::messages::1::role} to "user"
+		set {_body::messages::1::content} to "따옴표"" 포함"
+		set {_req} to new post api request to "{@base}/echo" with body json of {_body::*}
+		send {_req} and store the response in {_res}
+		set {_sent} to json value "body" of {_res}
+		send "[SKAPI-TEST] INFO T3 body=%{_sent}%" to console
+		check("T3 method", json value "method" of {_res}, "POST")
+		check("T3 content-type", json value "headers.content-type" of {_res}, "application/json; charset=utf-8")
+		check("T3 model", json value "model" of {_sent}, "test-model")
+		check("T3 max_tokens", json value "max_tokens" of {_sent}, 100)
+		check("T3 nested", json value "messages[0].content" of {_sent}, "따옴표"" 포함")
+
+		# ── T4 load json ──
+		set {_req} to new api request to "{@base}/users"
+		send {_req} and store the response in {_res}
+		load json {_res} into {_data::*}
+		check("T4 name", {_data::user::name}, "Steve")
+		check("T4 level", {_data::user::level}, 7)
+		check("T4 ratio", {_data::user::ratio}, 0.5)
+		check("T4 tag2", {_data::tags::2}, "b")
+		check("T4 tags size", size of {_data::tags::*}, 3)
+		check("T4 item name", {_data::items::2::name}, "shield")
+
+		# ── T5 json values / 필터 / 음수 인덱스 ──
+		set {_tags::*} to json values "tags" of {_res}
+		check("T5 values size", size of {_tags::*}, 3)
+		check("T5 filter", json value "items[id=2].name" of {_res}, "shield")
+		check("T5 last", json value "tags[-1]" of {_res}, "c")
+		set {_items::*} to json values "items[*]" of {_res}
+		check("T5 item json", json value "name" of {_items::1}, "sword")
+
+		# ── T6 404 ──
+		set {_req} to new api request to "{@base}/status/404"
+		send {_req} and store the response in {_res}
+		check("T6 status", api status of {_res}, 404)
+		if {_res} is successful:
+			fail("T6 not successful", "was successful")
+		else:
+			pass("T6 not successful")
+		if api error of {_res} is set:
+			fail("T6 no network error", "%api error of {_res}%")
+		else:
+			pass("T6 no network error")
+		check("T6 error body", json value "error.message" of {_res}, "status 404")
+
+		# ── T7 연결 실패 ──
+		set {_req} to new api request to "http://127.0.0.1:1/"
+		send {_req} and store the response in {_res}
+		if api error of {_res} is set:
+			pass("T7 network error")
+			send "[SKAPI-TEST] INFO T7 error=%api error of {_res}%" to console
+		else:
+			fail("T7 network error", "no error")
+		check("T7 status 0", api status of {_res}, 0)
+
+		# ── T8 타임아웃 ──
+		set {_req} to new api request to "{@base}/slow?ms=2500"
+		set api timeout of {_req} to 1 second
+		send {_req} and store the response in {_res}
+		check("T8 timeout", api error of {_res}, "응답 시간 초과 (timeout)")
+
+		# ── T9 동기 ──
+		set {_req} to new api request to "{@base}/echo?mode=sync"
+		send {_req} synchronously and store the response in {_res}
+		check("T9 sync effect", json value "args.mode" of {_res}, "sync")
+		set {_res2} to sync api response of {_req}
+		check("T9 sync expression", api status of {_res2}, 200)
+
+		# ── T10 and wait + last api response ──
+		set {_req} to new api request to "{@base}/echo?w=1"
+		send {_req} and wait
+		check("T10 last response", json value "args.w" of last api response, "1")
+
+		# ── T11 콜백형: 밖의 변수 사용 / 즉시 진행 / 격리 ──
+		set {skapitest::order} to "start"
+		set {_outer} to "outer-value"
+		set {_req} to new api request to "{@base}/slow?ms=300"
+		send {_req} async:
+			check("T11 cb outer local", {_outer}, "outer-value")
+			check("T11 cb response", api status of last api response, 200)
+			check("T11 cb ran later", {skapitest::order}, "after")
+			if command sender is console:
+				pass("T11 cb event value")
+			else:
+				fail("T11 cb event value", "command sender = %command sender%")
+			set {_outer} to "changed-inside"
+			wait 1 tick
+			check("T11 cb after wait", {_outer}, "changed-inside")
+			set {skapitest::cbdone} to true
+		set {skapitest::order} to "after"
+		check("T11 outer continues", {_outer}, "outer-value")
+
+		# ── T12 콜백 + 변수 저장 ──
+		set {_req} to new api request to "{@base}/echo?cb=store"
+		send {_req} and store the response in {_cbres}:
+			check("T12 cb store", json value "args.cb" of {_cbres}, "store")
+
+		# ── T13 백그라운드 ──
+		set {_req} to new api request to "{@base}/echo?bg=1"
+		send {_req} asynchronously
+		pass("T13 background sent")
+
+		# ── T14 반복문 안에서 대기형 ──
+		set {_seq} to ""
+		loop 3 times:
+			set {_req} to new api request to "{@base}/echo?i=%loop-value%"
+			send {_req} and store the response in {_r}
+			set {_seq} to "%{_seq}%%json value "args.i" of {_r}%"
+		check("T14 loop sequence", {_seq}, "123")
+
+		# ── T15 함수 안에서 대기형 ──
+		fetchStatus("{@base}/echo")
+		wait 1 second
+		check("T15 function", {skapitest::fn}, 200)
+		check("T11 isolation (outer after cb)", {_outer}, "outer-value")
+		check("T11 cb finished", {skapitest::cbdone}, true)
+
+		# ── T16 api data ──
+		set {_req} to new api request to "{@base}/echo"
+		set api data "who" of {_req} to "steve"
+		send {_req} and store the response in {_res}
+		check("T16 api data", api data "who" of {_res}, "steve")
+
+		# ── T17 JSON 경로 수정 (대소문자 유지) ──
+		set {_json} to "{}"
+		set json value "generationConfig.maxOutputTokens" of {_json} to 200
+		set json value "contents[0].parts[0].text" of {_json} to "hi"
+		add "a" to json values "tags" of {_json}
+		add "b" to json values "tags" of {_json}
+		send "[SKAPI-TEST] INFO T17 json=%{_json}%" to console
+		check("T17 camelCase kept", json value "generationConfig.maxOutputTokens" of {_json}, 200)
+		check("T17 nested array", json value "contents[0].parts[0].text" of {_json}, "hi")
+		check("T17 add", json value "tags[1]" of {_json}, "b")
+		delete json value "generationConfig" of {_json}
+		if json value "generationConfig" of {_json} is set:
+			fail("T17 delete", {_json})
+		else:
+			pass("T17 delete")
+		set {_req} to new post api request to "{@base}/echo" with body "{""model"":""m1""}"
+		set json value "model" of api body of {_req} to "m2"
+		check("T17 modify api body", json value "model" of api body of {_req}, "m2")
+		set {_cased::maxTokens} to 5
+		send "[SKAPI-TEST] INFO T17 json-of-case=%json of {_cased::*}%" to console
+
+		# ── T18 리다이렉트 / T19 텍스트 응답 ──
+		set {_req} to new api request to "{@base}/redirect"
+		send {_req} and store the response in {_res}
+		check("T18 redirect status", api status of {_res}, 200)
+		check("T18 redirect followed", json value "args.from" of {_res}, "redirect")
+		set {_req} to new api request to "{@base}/text"
+		send {_req} and store the response in {_res}
+		check("T19 text body", api body of {_res}, "hello text")
+
+		# ── T20 Skript 기본 send 와 충돌 없음 ──
+		set {_msg} to "[SKAPI-TEST] MSG-VAR-OK"
+		send {_msg}
+		send "[SKAPI-TEST] MSG-LITERAL-OK" to console
+
+		# ── T21 AI 응답 형태 ──
+		set {_req} to new post api request to "{@base}/ai" with body "{}"
+		send {_req} and store the response in {_res}
+		check("T21 ai text", json value "content[type=text].text" of {_res}, "안녕하세요 플레이어!")
+		check("T21 stop_reason", json value "stop_reason" of {_res}, "end_turn")
+
+		# ── T22 콜백 안에서 대기형 ──
+		set {_outer2} to "o2"
+		set {_req} to new api request to "{@base}/echo"
+		send {_req} async:
+			set {_inner} to "inner"
+			set {_req2} to new api request to "{@base}/echo?nested=1"
+			send {_req2} and store the response in {_r2}
+			check("T22 nested response", json value "args.nested" of {_r2}, "1")
+			check("T22 nested inner local", {_inner}, "inner")
+			check("T22 nested outer local", {_outer2}, "o2")
+
+		# ── T24 url encoded / json escaped ──
+		set {_kw} to "한글 a&b"
+		set {_req} to new api request to "{@base}/echo?q=%url encoded {_kw}%"
+		send {_req} and store the response in {_res}
+		check("T24 url encoded", json value "args.q" of {_res}, "한글 a&b")
+		set {_raw} to "{""text"":""%json escaped "따옴표"" 와 \ 역슬래시"%""}"
+		send "[SKAPI-TEST] INFO T24 raw=%{_raw}%" to console
+		check("T24 json escaped", json value "text" of {_raw}, "따옴표"" 와 \ 역슬래시")
+
+		# ── T23 none 요청은 오류만 내고 계속 진행 ──
+		send {_nothing} and store the response in {_x}
+		pass("T23 continued after none request")
+
+		# ── T25 소유격 형태 / 응답 정보 ──
+		set {_req} to new api request to "{@base}/echo"
+		send {_req} and save the response to {_res}
+		check("T25 possessive status", {_res}'s api status, 200)
+		if api duration of {_res} is set:
+			pass("T25 api duration")
+		else:
+			fail("T25 api duration", "none")
+		set {_names::*} to api header names of {_res}
+		if {_names::*} contains "x-test":
+			pass("T25 header names")
+		else:
+			fail("T25 header names", "%{_names::*}%")
+		check("T25 final url", api url of {_res}, "{@base}/echo")
+
+		# ── T26 요청 설정 지우기 / 되돌리기 ──
+		set api header "Accept" of {_req} to "text/plain"
+		delete api header "Accept" of {_req}
+		if api header "Accept" of {_req} is set:
+			fail("T26 delete header", "still set")
+		else:
+			pass("T26 delete header")
+		set api query "page" of {_req} to 3
+		delete api query "page" of {_req}
+		if api query "page" of {_req} is set:
+			fail("T26 delete query", "still set")
+		else:
+			pass("T26 delete query")
+		set api timeout of {_req} to 60 seconds
+		check("T26 set timeout", api timeout of {_req}, 60 seconds)
+		reset api timeout of {_req}
+		check("T26 reset timeout", api timeout of {_req}, 15 seconds)
+		set api body of {_req} to "x"
+		delete api body of {_req}
+		if api body of {_req} is set:
+			fail("T26 delete body", "still set")
+		else:
+			pass("T26 delete body")
+
+		# ── T27 json of 다양한 값 ──
+		set {_arr} to json of 1, 2 and 3
+		check("T27 json of list", {_arr}, "[1,2,3]")
+		check("T27 json of text", json of "안녕", """안녕""")
+		set {_b::stream} to false
+		set {_b::n} to 5.0
+		set {_j} to json of {_b::*}
+		check("T27 boolean", json value "stream" of {_j}, false)
+		check("T27 whole double", {_j}, "{""n"":5,""stream"":false}")
+		if pretty json of {_b::*} contains newline:
+			pass("T27 pretty")
+		else:
+			fail("T27 pretty", pretty json of {_b::*})
+		delete {_empty::*}
+		check("T27 empty list", json of {_empty::*}, "{}")
+
+		# ── T28 json 경로 수정: 여러 값 / 필터 ──
+		set {_j} to "{}"
+		set json value "ids" of {_j} to 1, 2 and 3
+		check("T28 multi set", json value "ids[2]" of {_j}, 3)
+		set {_j} to "{""items"":[{""id"":1,""name"":""a""},{""id"":2,""name"":""b""}]}"
+		set json value "items[id=2].name" of {_j} to "new name"
+		check("T28 filter set", json value "items[1].name" of {_j}, "new name")
+
+		# ── T29 send {_req} 만 쓰면 Skript 메시지로 처리됨 (요청은 안 나감) ──
+		set {_req} to new api request to "{@base}/echo?plain=1"
+		send {_req}
+		pass("T29 plain send is a message")
+
+		# ── 마무리 ──
+		wait 3 seconds
+		send "[SKAPI-TEST] SUMMARY pass=%{skapitest::pass}% fail=%{skapitest::fail}%" to console
+		execute console command "stop"

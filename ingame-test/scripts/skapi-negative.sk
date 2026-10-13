@@ -1,0 +1,13 @@
+# 대기형 비동기 뒤에서 Skript 가 막아야 하는 것들 (로드할 때 오류 2개가 나와야 정상)
+
+# 1. 값을 반환하는 함수에서 대기형 뒤 return
+function skapiNegativeReturn(url: text) :: number:
+	set {_req} to new api request to {_url}
+	send {_req} and store the response in {_r}
+	return api status of {_r}
+
+# 2. 대기형 뒤 cancel event
+on break:
+	set {_req} to new api request to "http://127.0.0.1:18080/echo"
+	send {_req} and store the response in {_res}
+	cancel event

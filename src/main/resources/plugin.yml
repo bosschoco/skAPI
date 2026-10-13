@@ -1,0 +1,19 @@
+name: skAPI
+version: '${version}'
+main: io.github.bosschoco.skapi.SkApiPlugin
+api-version: '26.2'
+depend: [Skript]
+description: Skript 에서 외부 API(HTTP) 호출을 쉽게 해주는 애드온
+authors: [bosschoco]
+website: https://github.com/bosschoco/skAPI
+
+commands:
+  skapi:
+    description: skAPI 관리 명령어
+    usage: /skapi <reload|info>
+    permission: skapi.admin
+
+permissions:
+  skapi.admin:
+    description: skAPI 관리 명령어 사용 권한
+    default: op
