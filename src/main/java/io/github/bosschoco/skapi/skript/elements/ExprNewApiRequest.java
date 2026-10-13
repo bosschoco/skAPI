@@ -24,7 +24,7 @@ import java.util.Set;
 @Example("set {_req} to new api request to \"https://api.example.com/users\"")
 @Example("set {_req} to new post api request to \"https://api.example.com/users\" with body json of {_user::*}")
 @Example("set {_req} to new api request to \"https://api.example.com/users/1\" with method \"DELETE\"")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprNewApiRequest extends SimpleExpression<ApiRequest> {
 
 	private static final Set<String> METHODS = Set.of("get", "post", "put", "patch", "delete", "head", "options");

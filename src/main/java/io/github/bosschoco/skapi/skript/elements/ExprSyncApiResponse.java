@@ -25,7 +25,7 @@ import org.skriptlang.skript.registration.SyntaxRegistry;
 	"응답이 올 때까지 서버(메인 스레드)가 멈추므로, 보통은 비동기 'send {_req} and store the response in {_res}' 를 권장합니다."
 })
 @Example("set {_res} to sync api response of {_req}")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprSyncApiResponse extends SimpleExpression<ApiResponse> {
 
 	public static void register(SyntaxRegistry registry) {

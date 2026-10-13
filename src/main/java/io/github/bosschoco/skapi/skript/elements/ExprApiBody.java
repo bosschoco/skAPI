@@ -20,7 +20,7 @@ import org.skriptlang.skript.registration.SyntaxRegistry;
 })
 @Example("set api body of {_req} to json of {_data::*}")
 @Example("send \"응답: %api body of {_res}%\" to player")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprApiBody extends SimplePropertyExpression<Object, String> {
 
 	public static void register(SyntaxRegistry registry) {

@@ -24,7 +24,7 @@ import org.skriptlang.skript.registration.SyntaxRegistry;
 })
 @Example("set api query \"q\" of {_req} to \"마인크래프트 서버\"")
 @Example("set api query \"page\" of {_req} to 2")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprApiQuery extends SimpleExpression<String> {
 
 	public static void register(SyntaxRegistry registry) {

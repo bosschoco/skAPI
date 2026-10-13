@@ -29,7 +29,7 @@ import org.skriptlang.skript.registration.SyntaxRegistry;
 	send {_req} and store the response in {_res}
 	send "답변 도착!" to (api data "asker" of {_res})
 	""")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprApiData extends SimpleExpression<Object> {
 
 	public static void register(SyntaxRegistry registry) {

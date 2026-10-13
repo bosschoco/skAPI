@@ -19,7 +19,7 @@ import org.skriptlang.skript.registration.SyntaxRegistry;
 	"요청의 URL 은 바꿀 수 있습니다. 쿼리 파라미터는 'api query' 로 따로 붙이는 것을 권장합니다."
 })
 @Example("set api url of {_req} to \"https://api.example.com/v2/users\"")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprApiUrl extends SimplePropertyExpression<Object, String> {
 
 	public static void register(SyntaxRegistry registry) {

@@ -36,7 +36,7 @@ import java.util.Map;
 	loop {_data::items::*}:
 		send "%loop-index%번 항목" to player
 	""")
-@Since("0.1.0")
+@Since("1.0.0")
 public class EffLoadJson extends Effect {
 
 	public static void register(SyntaxRegistry registry) {

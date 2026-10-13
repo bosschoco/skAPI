@@ -23,7 +23,7 @@ import java.util.List;
 	loop api header names of {_res}:
 		send "%loop-value%: %api header loop-value of {_res}%" to player
 	""")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprApiHeaderNames extends PropertyExpression<Object, String> {
 
 	public static void register(SyntaxRegistry registry) {

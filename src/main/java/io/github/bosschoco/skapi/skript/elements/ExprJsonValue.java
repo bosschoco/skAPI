@@ -40,7 +40,7 @@ import org.skriptlang.skript.registration.SyntaxRegistry;
 	add "tag" to json values "tags" of {_json}
 	delete json value "generationConfig" of {_json}
 	""")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprJsonValue extends SimpleExpression<Object> {
 
 	public static void register(SyntaxRegistry registry) {

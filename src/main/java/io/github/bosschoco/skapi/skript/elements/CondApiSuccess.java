@@ -16,7 +16,7 @@ import org.skriptlang.skript.registration.SyntaxRegistry;
 	else:
 		send "실패: %api status of {_res}% %api error of {_res}%" to player
 	""")
-@Since("0.1.0")
+@Since("1.0.0")
 public class CondApiSuccess extends PropertyCondition<ApiResponse> {
 
 	public static void register(SyntaxRegistry registry) {

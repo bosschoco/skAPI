@@ -75,7 +75,7 @@ import java.util.List;
 	# 동기 (서버가 멈춤 - 주의)
 	send {_req} synchronously and store the response in {_res}
 	""")
-@Since("0.1.0")
+@Since("1.0.0")
 public class EffSecSendApiRequest extends EffectSection {
 
 	public static void register(SyntaxRegistry registry) {
@@ -197,10 +197,14 @@ public class EffSecSendApiRequest extends EffectSection {
 
 		http.send(snapshot).thenAccept(response -> SkApiPlugin.runOnMainThread(() -> {
 			Variables.setLocalVariables(event, locals);
-			deliver(event, response);
-			if (next != null)
-				TriggerItem.walk(next, event);
-			Variables.removeLocals(event);
+			try {
+				deliver(event, response);
+				if (next != null)
+					TriggerItem.walk(next, event);
+			} finally {
+				// 이어서 실행한 코드가 오류로 멈춰도 로컬 변수는 반드시 정리한다
+				Variables.removeLocals(event);
+			}
 		}));
 	}
 
@@ -216,12 +220,15 @@ public class EffSecSendApiRequest extends EffectSection {
 			// 혹시 같은 이벤트가 아직 다른 곳에서 로컬 변수를 쓰고 있다면 잠시 치워뒀다가 되돌린다
 			Object previous = Variables.removeLocals(event);
 			Variables.setLocalVariables(event, locals);
-			Delay.addDelayedEvent(event);
-			deliver(event, response);
-			TriggerItem.walk(trigger, event);
-			Variables.removeLocals(event);
-			if (previous != null)
-				Variables.setLocalVariables(event, previous);
+			try {
+				Delay.addDelayedEvent(event);
+				deliver(event, response);
+				TriggerItem.walk(trigger, event);
+			} finally {
+				Variables.removeLocals(event);
+				if (previous != null)
+					Variables.setLocalVariables(event, previous);
+			}
 		}));
 	}
 

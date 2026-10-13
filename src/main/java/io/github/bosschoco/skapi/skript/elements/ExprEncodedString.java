@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets;
 })
 @Example("set {_json} to \"{\"\"text\"\": \"\"%json escaped message%\"\"}\"")
 @Example("set {_req} to new api request to \"https://api.example.com/search?q=%url encoded {_keyword}%\"")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprEncodedString extends SimpleExpression<String> {
 
 	public static void register(SyntaxRegistry registry) {

@@ -25,7 +25,7 @@ import org.skriptlang.skript.registration.SyntaxRegistry;
 	send {_req} asynchronously:
 		send api body of last api response to player
 	""")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprLastApiResponse extends SimpleExpression<ApiResponse> {
 
 	public static void register(SyntaxRegistry registry) {

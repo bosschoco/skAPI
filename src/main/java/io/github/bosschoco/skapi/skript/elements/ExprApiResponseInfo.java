@@ -37,7 +37,7 @@ public final class ExprApiResponseInfo {
 	@Name("API Status Code")
 	@Description("응답의 HTTP 상태 코드 (200, 404, 500 ...). 네트워크 오류로 응답을 못 받았으면 0 입니다.")
 	@Example("if api status of {_res} is 404:")
-	@Since("0.1.0")
+	@Since("1.0.0")
 	public static class Status extends SimplePropertyExpression<ApiResponse, Long> {
 
 		@Override
@@ -62,7 +62,7 @@ public final class ExprApiResponseInfo {
 		"서버가 응답했다면(404, 500 포함) none 입니다. 상태 코드까지 확인하려면 '{_res} is successful' 을 쓰세요."
 	})
 	@Example("if api error of {_res} is set:\n\tsend \"요청 실패: %api error of {_res}%\" to player")
-	@Since("0.1.0")
+	@Since("1.0.0")
 	public static class ErrorMessage extends SimplePropertyExpression<ApiResponse, String> {
 
 		@Override
@@ -84,7 +84,7 @@ public final class ExprApiResponseInfo {
 	@Name("API Response Time")
 	@Description("요청을 보내고 응답을 받기까지 걸린 시간.")
 	@Example("send \"%api response time of {_res}% 걸림\" to player")
-	@Since("0.1.0")
+	@Since("1.0.0")
 	public static class ResponseTime extends SimplePropertyExpression<ApiResponse, Timespan> {
 
 		@Override

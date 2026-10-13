@@ -9,6 +9,7 @@ import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.SyntaxStringBuilder;
 import ch.njol.skript.lang.Variable;
 import ch.njol.skript.lang.util.SimpleExpression;
+import ch.njol.skript.util.LiteralUtils;
 import ch.njol.util.Kleenean;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -35,7 +36,7 @@ import java.util.Map;
 	set {_json} to json of {_body::*}
 	# → {"model":"gpt-model","messages":[{"role":"user","content":"..."}]}
 	""")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprJsonOf extends SimpleExpression<String> {
 
 	public static void register(SyntaxRegistry registry) {
@@ -51,9 +52,10 @@ public class ExprJsonOf extends SimpleExpression<String> {
 
 	@Override
 	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
-		values = exprs[0];
+		// %objects% 자리의 글자 값(json of 1, 2 and 3 등)은 Skript 가 아직 변환하지 않은 상태로 넘겨주므로 여기서 변환한다
+		values = LiteralUtils.defendExpression(exprs[0]);
 		pretty = parseResult.hasTag("pretty");
-		return true;
+		return LiteralUtils.canInitSafely(values);
 	}
 
 	@Override

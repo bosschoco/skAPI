@@ -6,14 +6,14 @@
 #  비동기로 보내도 {_player}, {_question} 같은 로컬 변수는 그대로 유지되므로
 #  답변이 왔을 때 질문한 플레이어에게 정확히 돌려줄 수 있습니다.
 #
-#  ※ API 키는 스크립트에 직접 적지 말고, 서버 관리자만 볼 수 있는 곳에 두세요.
-#    아래 {@api-key} 는 예시입니다.
+#  ※ API 키는 플레이어에게 절대 보이지 않게 하고, 서버 파일 접근 권한을 관리하세요.
+#  ※ options 값은 글자 그대로 붙여넣어지므로 따옴표 없이 적고, 쓸 때 "{@이름}" 처럼 씁니다.
 # ─────────────────────────────────────────────
 
 options:
-	api-key: "여기에-API-키"
-	# 사용할 모델. 더 저렴하고 빠른 모델을 쓰려면 이 값만 바꾸면 됩니다.
-	model: "claude-opus-5-5"
+	api-key: 여기에-API-키
+	# 사용할 모델. 다른 모델을 쓰려면 이 값만 바꾸면 됩니다.
+	model: claude-opus-5-5
 
 command /ai <text>:
 	cooldown: 5 seconds
@@ -24,7 +24,7 @@ command /ai <text>:
 		send "&7[AI] 생각 중..." to {_player}
 
 		# 요청 본문을 목록 변수로 만들고 json of 로 변환 (따옴표/줄바꿈 이스케이프 자동 처리)
-		set {_body::model} to {@model}
+		set {_body::model} to "{@model}"
 		set {_body::max_tokens} to 4096
 		set {_body::system} to "너는 마인크래프트 서버의 도우미야. 한국어로 3문장 이내로 짧게 답해."
 		set {_body::messages::1::role} to "user"
@@ -35,7 +35,7 @@ command /ai <text>:
 		set {_body::fallbacks} to "default"
 
 		set {_req} to new post api request to "https://api.anthropic.com/v1/messages" with body json of {_body::*}
-		set api header "x-api-key" of {_req} to {@api-key}
+		set api header "x-api-key" of {_req} to "{@api-key}"
 		set api header "anthropic-version" of {_req} to "2023-06-01"
 		set api header "anthropic-beta" of {_req} to "server-side-fallback-2026-07-01"
 		set api timeout of {_req} to 90 seconds

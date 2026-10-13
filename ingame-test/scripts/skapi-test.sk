@@ -259,6 +259,74 @@ command /skapitest:
 		send {_nothing} and store the response in {_x}
 		pass("T23 continued after none request")
 
+		# ── T25 소유격 형태 / 응답 정보 ──
+		set {_req} to new api request to "{@base}/echo"
+		send {_req} and save the response to {_res}
+		check("T25 possessive status", {_res}'s api status, 200)
+		if api duration of {_res} is set:
+			pass("T25 api duration")
+		else:
+			fail("T25 api duration", "none")
+		set {_names::*} to api header names of {_res}
+		if {_names::*} contains "x-test":
+			pass("T25 header names")
+		else:
+			fail("T25 header names", "%{_names::*}%")
+		check("T25 final url", api url of {_res}, "{@base}/echo")
+
+		# ── T26 요청 설정 지우기 / 되돌리기 ──
+		set api header "Accept" of {_req} to "text/plain"
+		delete api header "Accept" of {_req}
+		if api header "Accept" of {_req} is set:
+			fail("T26 delete header", "still set")
+		else:
+			pass("T26 delete header")
+		set api query "page" of {_req} to 3
+		delete api query "page" of {_req}
+		if api query "page" of {_req} is set:
+			fail("T26 delete query", "still set")
+		else:
+			pass("T26 delete query")
+		set api timeout of {_req} to 60 seconds
+		check("T26 set timeout", api timeout of {_req}, 60 seconds)
+		reset api timeout of {_req}
+		check("T26 reset timeout", api timeout of {_req}, 15 seconds)
+		set api body of {_req} to "x"
+		delete api body of {_req}
+		if api body of {_req} is set:
+			fail("T26 delete body", "still set")
+		else:
+			pass("T26 delete body")
+
+		# ── T27 json of 다양한 값 ──
+		set {_arr} to json of 1, 2 and 3
+		check("T27 json of list", {_arr}, "[1,2,3]")
+		check("T27 json of text", json of "안녕", """안녕""")
+		set {_b::stream} to false
+		set {_b::n} to 5.0
+		set {_j} to json of {_b::*}
+		check("T27 boolean", json value "stream" of {_j}, false)
+		check("T27 whole double", {_j}, "{""n"":5,""stream"":false}")
+		if pretty json of {_b::*} contains newline:
+			pass("T27 pretty")
+		else:
+			fail("T27 pretty", pretty json of {_b::*})
+		delete {_empty::*}
+		check("T27 empty list", json of {_empty::*}, "{}")
+
+		# ── T28 json 경로 수정: 여러 값 / 필터 ──
+		set {_j} to "{}"
+		set json value "ids" of {_j} to 1, 2 and 3
+		check("T28 multi set", json value "ids[2]" of {_j}, 3)
+		set {_j} to "{""items"":[{""id"":1,""name"":""a""},{""id"":2,""name"":""b""}]}"
+		set json value "items[id=2].name" of {_j} to "new name"
+		check("T28 filter set", json value "items[1].name" of {_j}, "new name")
+
+		# ── T29 send {_req} 만 쓰면 Skript 메시지로 처리됨 (요청은 안 나감) ──
+		set {_req} to new api request to "{@base}/echo?plain=1"
+		send {_req}
+		pass("T29 plain send is a message")
+
 		# ── 마무리 ──
 		wait 3 seconds
 		send "[SKAPI-TEST] SUMMARY pass=%{skapitest::pass}% fail=%{skapitest::fail}%" to console

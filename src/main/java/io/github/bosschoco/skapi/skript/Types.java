@@ -19,7 +19,7 @@ final class Types {
 			.user("api ?requests?")
 			.name("API Request")
 			.description("보낼 API(HTTP) 요청. 'new api request to \"url\"' 로 만들고 헤더/본문/쿼리 등을 설정한 뒤 send 로 보냅니다.")
-			.since("0.1.0")
+			.since("1.0.0")
 			.parser(new NonParser<>() {
 				@Override
 				public String toString(ApiRequest request, int flags) {
@@ -31,7 +31,7 @@ final class Types {
 			.user("api ?responses?")
 			.name("API Response")
 			.description("API 요청의 응답. 상태 코드, 본문, 헤더, 오류 메시지 등을 담고 있습니다.")
-			.since("0.1.0")
+			.since("1.0.0")
 			.parser(new NonParser<>() {
 				@Override
 				public String toString(ApiResponse response, int flags) {

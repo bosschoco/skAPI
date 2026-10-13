@@ -22,7 +22,7 @@ import java.time.Duration;
 	"AI API 처럼 답변이 오래 걸리는 요청은 넉넉하게 늘려주세요. reset/delete 하면 기본값으로 돌아갑니다."
 })
 @Example("set api timeout of {_req} to 60 seconds")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprApiTimeout extends SimplePropertyExpression<ApiRequest, Timespan> {
 
 	public static void register(SyntaxRegistry registry) {

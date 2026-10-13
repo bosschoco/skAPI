@@ -25,7 +25,7 @@ import org.skriptlang.skript.registration.SyntaxRegistry;
 })
 @Example("set api header \"Authorization\" of {_req} to \"Bearer %{_token}%\"")
 @Example("send \"남은 요청 수: %api header \"X-RateLimit-Remaining\" of {_res}%\" to player")
-@Since("0.1.0")
+@Since("1.0.0")
 public class ExprApiHeader extends SimpleExpression<String> {
 
 	public static void register(SyntaxRegistry registry) {
