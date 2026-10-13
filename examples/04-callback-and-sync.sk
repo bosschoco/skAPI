@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────
+#  skAPI 예제 4 - 콜백형 비동기 / 동기 방식 / api data
+# ─────────────────────────────────────────────
+
+# ── 콜백형 비동기 ─────────────────────────────
+# 섹션(:)을 붙이면, 섹션 안의 코드만 응답이 왔을 때 실행되고
+# 섹션 아래 코드는 기다리지 않고 바로 실행됩니다.
+command /weather <text>:
+	trigger:
+		set {_city} to arg-1
+		set {_req} to new api request to "https://wttr.in/%url encoded {_city}%"
+		set api query "format" of {_req} to "3"
+
+		send {_req} asynchronously:
+			# 요청을 보낸 시점의 로컬 변수({_city})와 player 를 그대로 쓸 수 있습니다.
+			if last api response is successful:
+				send "&b%{_city}% 날씨: &f%api body of last api response%" to player
+			else:
+				send "&c%{_city}% 날씨를 가져오지 못했어요." to player
+
+		send "&7날씨를 조회하는 중..." to player   # ← 응답을 기다리지 않고 바로 출력
+
+# 응답을 변수에 받으면서 콜백으로도 쓸 수 있습니다.
+command /ip:
+	trigger:
+		set {_req} to new api request to "https://api.ipify.org?format=json"
+		send {_req} and store the response in {_res}:
+			send "서버 공인 IP: %json value "ip" of {_res}%" to player
+
+# ── 동기 방식 ─────────────────────────────────
+# 응답이 올 때까지 서버 전체가 멈춥니다! 아주 빠른 내부 API 등 꼭 필요할 때만 쓰세요.
+# (메인 스레드에서는 config.yml 의 sync.max-main-thread-timeout 초 이상 기다리지 않습니다)
+command /synctest:
+	permission: op
+	trigger:
+		set {_req} to new api request to "https://httpbin.org/uuid"
+		send {_req} synchronously and store the response in {_res}
+		send "동기 결과: %json value "uuid" of {_res}%" to player
+
+		# 표현식 형태도 있습니다
+		set {_res2} to sync api response of {_req}
+		send "동기 결과 2: %json value "uuid" of {_res2}%" to player
+
+# ── api data : 요청에 값을 붙여서 응답까지 들고 다니기 ──
+# 로컬 변수는 자동으로 보존되지만, 응답 객체 하나만 다른 함수로 넘길 때 함께 보낼 값을 넣어두면 편합니다.
+command /ask <text>:
+	trigger:
+		set {_req} to new post api request to "https://httpbin.org/post" with body json of arg-1
+		set api data "asker" of {_req} to player
+		set api data "question" of {_req} to arg-1
+		send {_req} and store the response in {_res}
+		handleAnswer({_res})
+
+function handleAnswer(res: apiresponse):
+	set {_p} to api data "asker" of {_res}
+	send "&a'%api data "question" of {_res}%' 요청 완료 (%api status of {_res}%)" to {_p}

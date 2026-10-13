@@ -1,0 +1,7 @@
+# 일부러 틀린 문법: 로그에 skAPI 의 한국어 오류 메시지가 나와야 한다.
+command /skapiparseerrors:
+	trigger:
+		set {_r} to new api request to "http://127.0.0.1:18080/echo"
+		send {_r} sync:
+			broadcast "이 줄은 로드되면 안 됨"
+		load json {_r} into {_single}
